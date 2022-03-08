@@ -1,0 +1,3 @@
+add_executable(test_futils test_futils.f90)
+target_link_libraries(test_futils futils)
+target_include_directories(test_futils PUBLIC ${CMAKE_Fortran_MODULE_DIRECTORY})
