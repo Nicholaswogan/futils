@@ -1,7 +1,5 @@
 
 add_library(futils futils.f90)
-set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/interp.f90
-PROPERTIES OBJECT_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/binning_mod.f90)
 
 set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/interp.f90
 PROPERTIES OBJECT_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/binning.f90)

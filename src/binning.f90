@@ -96,7 +96,7 @@
       END
 !*==INTER2_.spg  processed by SPAG 6.72Dc at 17:56 on  5 Aug 2021
  
-      SUBROUTINE INTER(Ng,Xg,Yg,N,X,Y,Ierr)
+      SUBROUTINE INTER2(Ng,Xg,Yg,N,X,Y,Ierr)
  
 !-----------------------------------------------------------------------------*
 !=  PURPOSE:                                                                 =*
