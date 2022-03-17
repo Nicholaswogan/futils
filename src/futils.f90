@@ -3,6 +3,18 @@ module futils
   use iso_fortran_env, only: dp => real64
   implicit none
   
+  private
+  
+  public :: dp
+  ! misc
+  public :: Timer, printf, is_close
+  ! interpolation
+  public :: addpnt, inter2, rebin, interp
+  ! strings
+  public :: replaceStr
+  ! sortting
+  public :: argsort, sort
+  
   type Timer
     integer :: cr, cm, c1, c2
     real(dp) :: time
@@ -11,7 +23,6 @@ module futils
     procedure :: finish => Timer_finish
   end type
   
-  ! Sorting
   interface argsort
     module procedure iargsort, rargsort
   end interface
@@ -29,11 +40,17 @@ contains
     call system_clock(count = self%c1, count_rate = self%cr, count_max = self%cm)
   end subroutine
   
-  subroutine Timer_finish(self, msg)
+  subroutine Timer_finish(self, msg, niters)
     class(Timer), intent(inout) :: self
     character(len=*), optional, intent(in) :: msg
+    integer, optional, intent(in) :: niters
     call system_clock(count = self%c2)
-    self%time = (self%c2-self%c1)/real(self%cr)
+    
+    if (present(niters)) then
+      self%time = ((self%c2-self%c1)/real(self%cr))/real(niters)
+    else
+      self%time = (self%c2-self%c1)/real(self%cr)
+    endif
     if (present(msg)) then
       print"(A,1x,es10.4)",trim(msg),self%time
     endif
@@ -56,6 +73,28 @@ contains
     endif
   end subroutine
   
+  pure elemental function is_close(val1, val2, tol) result(res)
+    real(dp), intent(in) :: val1, val2
+    real(dp), optional, intent(in) :: tol
+    
+    logical :: res
+    
+    real(dp) :: tol_
+
+    if (present(tol)) then
+      tol_ = tol
+    else
+      tol_ = 1.0e-5_dp
+    endif
+    
+    if (val1 < val2 + (val2*tol_) .and. val1 > val2 - (val2*tol_)) then
+      res = .true.
+    else
+      res = .false.
+    endif
+
+  end function
+  
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !!! Interpolation and binning !!!
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -63,6 +102,114 @@ contains
   ! adding to module means explicit interface to function
   ! which allows for more compiler errors to be caught
   include "binning.f90"
+  
+  ! rebins old_vals defined on old_bins to new_bins
+  subroutine rebin(old_bins, old_vals, new_bins, new_vals, ierr)
+    real(dp), intent(in) :: old_bins(:)
+    real(dp), intent(in) :: old_vals(:)
+    real(dp), intent(in) :: new_bins(:)
+    real(dp), intent(out) :: new_vals(:)
+    integer, optional, intent(out) :: ierr
+    
+    integer :: i, j, l, n_old, n_new
+    real(dp) :: b1, b2
+    
+    ! option to check inputs.
+    if (present(ierr)) then
+      ierr = 0
+      
+      ! check shape
+      n_old = size(old_vals)
+      n_new = size(new_vals)
+      if (n_old+1 /= size(old_bins)) then
+        ierr = -1
+        return
+      endif
+      
+      if (n_new+1 /= size(new_bins)) then
+        ierr = -2
+        return
+      endif
+      
+      ! check that new bins overlap with the old bins
+      if (new_bins(1) < old_bins(1) .and. new_bins(2) < old_bins(1)) then
+        ierr = -3
+        return
+      endif
+      
+      if (new_bins(n_new) > old_bins(n_old+1) .and. new_bins(n_new+1) > old_bins(n_old+1)) then
+        ierr = -4
+        return
+      endif
+      
+      ! check that bins are all increasing
+      do i = 1,n_old
+        if (old_bins(i+1) <= old_bins(i)) then
+          ierr = -5
+          return
+        endif
+      enddo
+      
+      do i = 1,n_new
+        if (new_bins(i+1) <= new_bins(i)) then
+          ierr = -6
+          return
+        endif
+      enddo
+      
+    endif
+    
+    new_vals = 0.0_dp
+    l = 1
+    
+    do i = 1,n_new
+      b1 = new_bins(i+1) - new_bins(i)
+      do j = l,n_old
+        ! four different cases
+        
+        ! ______       (old bin)
+        !     ________ (new bin)
+        if (old_bins(j) <= new_bins(i) .and. &
+            old_bins(j+1) > new_bins(i) .and. old_bins(j+1) < new_bins(i+1)) then
+          
+          b2 = old_bins(j+1) - new_bins(i)
+          new_vals(i) = new_vals(i) + (b2/b1)*old_vals(j)
+          
+        !    ____    (old bin)
+        !  ________  (new bin)
+        elseif (old_bins(j) >= new_bins(i) .and. old_bins(j+1) <= new_bins(i+1)) then
+          
+          b2 = old_bins(j+1) - old_bins(j)
+          new_vals(i) = new_vals(i) + (b2/b1)*old_vals(j)
+          
+        !        ____    (old bin)
+        !  ________      (new bin)
+        elseif (old_bins(j) >= new_bins(i) .and. &
+                old_bins(j) < new_bins(i+1) .and. old_bins(j+1) > new_bins(i+1)) then
+        
+          b2 = new_bins(i+1) - old_bins(j)
+          new_vals(i) = new_vals(i) + (b2/b1)*old_vals(j)
+        
+        ! ________    (old bin)
+        !   ____      (new bin) 
+        elseif (old_bins(j) < new_bins(i) .and. old_bins(j+1) > new_bins(i+1)) then
+          
+          new_vals(i) = new_vals(i) + old_vals(j)
+          
+        !         _____   (old bin)
+        !   ____          (new bin) 
+        elseif (old_bins(j) > new_bins(i+1)) then
+          ! time to move onto the next new_bin
+          l = j - 1
+          exit
+        else
+          ! nothing
+        endif
+
+      enddo
+    enddo
+    
+  end subroutine
 
   ! 1D linear interpolation with constant extrapolation.
   subroutine interp(ng, n, xg, x, y, yg, err)
@@ -142,9 +289,9 @@ contains
     end do
   end function replaceStr
   
-  !!!!!!!!!!!!!!!!!!!!!!!!
+  !!!!!!!!!!!!!!!
   !!! Sorting !!!
-  !!!!!!!!!!!!!!!!!!!!!!!!
+  !!!!!!!!!!!!!!!
 
   subroutine sortNums(nums)
     ! sorts array of numbers, nums, from smallest to largest
