@@ -114,13 +114,14 @@ contains
     integer :: i, j, l, n_old, n_new
     real(dp) :: b1, b2
     
+    n_old = size(old_vals)
+    n_new = size(new_vals)
+    
     ! option to check inputs.
     if (present(ierr)) then
       ierr = 0
       
       ! check shape
-      n_old = size(old_vals)
-      n_new = size(new_vals)
       if (n_old+1 /= size(old_bins)) then
         ierr = -1
         return
