@@ -21,9 +21,9 @@ contains
     y_new = 9999.0_dp
     
     call addpnt(x, y, ld, n, x_new, y_new, ierr)
-    
-    if (x(3) /= x_new) error stop "test_addpnt: x(3) /= x_new"
-    if (y(3) /= y_new) error stop "test_addpnt: y(3) /= y_new"
+        
+    if (is_close(x(3), x_new)) error stop "test_addpnt: x(3) /= x_new"
+    if (is_close(y(3), y_new)) error stop "test_addpnt: y(3) /= y_new"
     if (n /= ld) error stop "test_addpnt: n /= 5"
   
   end subroutine
