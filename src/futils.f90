@@ -313,117 +313,30 @@ contains
 
   end subroutine
   
-  ! rebins old_vals defined on old_bins to new_bins
+  !> Rebins `old_vals` defined on `old_bins` to `new_bins`. An example is
+  !> rebinning a high resolution spectra of infrared emission of Earth 
+  !> to a lower resolution.
   subroutine rebin(old_bins, old_vals, new_bins, new_vals, ierr)
-    real(dp), intent(in) :: old_bins(:)
-    real(dp), intent(in) :: old_vals(:)
-    real(dp), intent(in) :: new_bins(:)
-    real(dp), intent(out) :: new_vals(:)
-    integer, optional, intent(out) :: ierr
+    use futils_fastmath, only: fast_rebin => rebin
+    real(dp), intent(in) :: old_bins(:) !! Edges of bins for which old_vals are defined
+    real(dp), intent(in) :: old_vals(:) !! Values defined on old_bins.
+    real(dp), intent(in) :: new_bins(:) !! Edges of target bin that you want to rebin to.
+    real(dp), intent(out) :: new_vals(:) !! Values defined on new_bins (output).
+    integer, optional, intent(out) :: ierr !! Inputs will be checked if ierr
+                                           !! is passes as an argument. if ierr < 0
+                                           !! on return, then there is an issue with
+                                           !! the inputs.
     
-    integer :: i, j, l, n_old, n_new
-    real(dp) :: b1, b2
-    
-    n_old = size(old_vals)
-    n_new = size(new_vals)
-    
-    ! option to check inputs.
     if (present(ierr)) then
-      ierr = 0
-      
-      ! check shape
-      if (n_old+1 /= size(old_bins)) then
-        ierr = -1
-        return
-      endif
-      
-      if (n_new+1 /= size(new_bins)) then
-        ierr = -2
-        return
-      endif
-      
-      ! check that new bins overlap with the old bins
-      if (new_bins(1) < old_bins(1) .and. new_bins(2) < old_bins(1)) then
-        ierr = -3
-        return
-      endif
-      
-      if (new_bins(n_new) > old_bins(n_old+1) .and. new_bins(n_new+1) > old_bins(n_old+1)) then
-        ierr = -4
-        return
-      endif
-      
-      ! check that bins are all increasing
-      do i = 1,n_old
-        if (old_bins(i+1) <= old_bins(i)) then
-          ierr = -5
-          return
-        endif
-      enddo
-      
-      do i = 1,n_new
-        if (new_bins(i+1) <= new_bins(i)) then
-          ierr = -6
-          return
-        endif
-      enddo
-      
+      call fast_rebin(old_bins, old_vals, new_bins, new_vals, ierr)
+    else
+      call fast_rebin(old_bins, old_vals, new_bins, new_vals)
     endif
-    
-    new_vals = 0.0_dp
-    l = 1
-    
-    do i = 1,n_new
-      b1 = new_bins(i+1) - new_bins(i)
-      do j = l,n_old
-        ! four different cases
-        
-        ! ______       (old bin)
-        !     ________ (new bin)
-        if (old_bins(j) <= new_bins(i) .and. &
-            old_bins(j+1) > new_bins(i) .and. old_bins(j+1) < new_bins(i+1)) then
-          
-          b2 = old_bins(j+1) - new_bins(i)
-          new_vals(i) = new_vals(i) + (b2/b1)*old_vals(j)
-          
-        !    ____    (old bin)
-        !  ________  (new bin)
-        elseif (old_bins(j) >= new_bins(i) .and. old_bins(j+1) <= new_bins(i+1)) then
-          
-          b2 = old_bins(j+1) - old_bins(j)
-          new_vals(i) = new_vals(i) + (b2/b1)*old_vals(j)
-          
-        !        ____    (old bin)
-        !  ________      (new bin)
-        elseif (old_bins(j) >= new_bins(i) .and. &
-                old_bins(j) < new_bins(i+1) .and. old_bins(j+1) > new_bins(i+1)) then
-        
-          b2 = new_bins(i+1) - old_bins(j)
-          new_vals(i) = new_vals(i) + (b2/b1)*old_vals(j)
-        
-        ! ________    (old bin)
-        !   ____      (new bin) 
-        elseif (old_bins(j) < new_bins(i) .and. old_bins(j+1) > new_bins(i+1)) then
-          
-          new_vals(i) = new_vals(i) + old_vals(j)
-          
-        !         _____   (old bin)
-        !   ____          (new bin) 
-        elseif (old_bins(j) > new_bins(i+1)) then
-          ! time to move onto the next new_bin
-          l = j - 1
-          exit
-        else
-          ! nothing
-        endif
-
-      enddo
-    enddo
     
   end subroutine
 
   ! 1D linear interpolation with constant extrapolation.
-  subroutine interp(ng, n, xg, x, y, yg, err)
+  subroutine interp(ng, n, xg, x, y, yg, ierr)
     implicit none
     integer, intent(in) :: ng ! length of new grid (we interpolate to this new grid)
     integer, intent(in) :: n ! length of old grid
@@ -431,29 +344,34 @@ contains
     real(dp), intent(in) :: x(n), y(n) ! old data
     
     real(dp), intent(out) :: yg(ng) ! new data 
-    character(:), allocatable, intent(out) :: err 
+    integer, optional, intent(out) :: ierr 
     
     real(dp) :: slope
     integer :: i, j, nn
     
-    do i = 1,n-1
-      if (x(i+1) <= x(i)) then
-        err = 'x must be sorted.'
-        return
-      endif
-    enddo
-    do i = 1,ng-1
-      if (xg(i+1) <= xg(i)) then
-        err = 'xg must be sorted.'
-        return
-      endif
-    enddo
+    if (present(ierr)) then
+      ierr = 0
+      do i = 1,n-1
+        if (x(i+1) <= x(i)) then
+          ierr = -1
+          return
+        endif
+      enddo
+      do i = 1,ng-1
+        if (xg(i+1) <= xg(i)) then
+          ierr = -2
+          return
+        endif
+      enddo
+    endif
     
     nn = 1
     do i = 1,ng
       if (xg(i) <= x(1)) then
+        ! contant extrapolation below
         yg(i) = y(1)
       elseif ((xg(i) > x(1)) .and. (xg(i) < x(n))) then
+        ! if within the data points, then linear interpolation
         do j = nn,n
           if ((xg(i) >= x(j)) .and. (xg(i) <= x(j+1))) then
             slope = (y(j+1)-y(j))/(x(j+1)-x(j))
@@ -463,6 +381,7 @@ contains
           endif
         enddo
       elseif (xg(i) >= x(n)) then
+        ! contant extrapolation above
         yg(i) = y(n)
       endif
     enddo

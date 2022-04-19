@@ -1,7 +1,13 @@
+add_library(futils_fastmath futils_fastmath.f90)
 
 add_library(futils futils.f90)
+target_link_libraries(futils futils_fastmath)
 
-set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/interp.f90
-PROPERTIES OBJECT_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/binning.f90)
-
-
+# Special compiler options
+if ("${CMAKE_Fortran_COMPILER_ID}" MATCHES "GNU")
+  target_compile_options(futils_fastmath PRIVATE -Wunused)
+  target_compile_options(futils PRIVATE -Wunused)
+  if (CMAKE_BUILD_TYPE STREQUAL "Release")
+    target_compile_options(futils_fastmath PRIVATE -ffast-math)
+  endif()
+endif()

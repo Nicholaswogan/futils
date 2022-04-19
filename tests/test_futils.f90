@@ -22,8 +22,8 @@ contains
     
     call addpnt(x, y, ld, n, x_new, y_new, ierr)
         
-    if (is_close(x(3), x_new)) error stop "test_addpnt: x(3) /= x_new"
-    if (is_close(y(3), y_new)) error stop "test_addpnt: y(3) /= y_new"
+    if (.not. is_close(x(3), x_new)) error stop "test_addpnt: x(3) /= x_new"
+    if (.not. is_close(y(3), y_new)) error stop "test_addpnt: y(3) /= y_new"
     if (n /= ld) error stop "test_addpnt: n /= 5"
   
   end subroutine
@@ -38,6 +38,7 @@ contains
     real(dp), allocatable :: correct_vals(:)
     
     integer :: i, ierr
+    type(Timer) :: tm
       
     old_bins = &
       [0.0000000000000000e+00_dp, 2.7301300317049026e-02_dp, 7.8484747558832169e-02_dp, &
@@ -124,6 +125,13 @@ contains
         error stop "rebin: returned incorrect values"
       endif
     enddo
+    
+    call tm%start()
+    do i = 1,4000000
+      call rebin(old_bins, old_vals, new_bins, new_vals)
+    enddo
+    call tm%finish("Time to rebin (s): ", niters = 4000000)
+    write(*,"(a,es10.3)") "new_vals(1) = ",new_vals(1)
     
   end subroutine
   
