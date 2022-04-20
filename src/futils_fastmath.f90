@@ -72,11 +72,11 @@ contains
     do i = 1,n_new
       b1 = new_bins(i+1) - new_bins(i)
       do j = l,n_old
-        ! four different cases
+        ! Several different cases
         
         !    ____    (old bin)
         !  ________  (new bin)
-        if (old_bins(j) >= new_bins(i) .and. old_bins(j+1) <= new_bins(i+1)) then
+        if (old_bins(j) > new_bins(i) .and. old_bins(j+1) < new_bins(i+1)) then
           
           b2 = old_bins(j+1) - old_bins(j)
           new_vals(i) = new_vals(i) + (b2/b1)*old_vals(j)
@@ -99,7 +99,7 @@ contains
         
         ! ________    (old bin)
         !   ____      (new bin) 
-        elseif (old_bins(j) < new_bins(i) .and. old_bins(j+1) > new_bins(i+1)) then
+        elseif (old_bins(j) <= new_bins(i) .and. old_bins(j+1) >= new_bins(i+1)) then
           
           new_vals(i) = new_vals(i) + old_vals(j)
           
@@ -109,6 +109,7 @@ contains
         else
           ! time to move onto the next new_bin
           l = j - 1
+          exit
           
           ! This is a bit unsafe. If we have the case
           !  ____           (old bin)
@@ -118,7 +119,6 @@ contains
           ! ierr is NOT an argument. Error checking determines
           ! if there is some overlap between the bins.
           
-          exit
         endif
       enddo
     enddo

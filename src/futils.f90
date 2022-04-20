@@ -315,7 +315,8 @@ contains
   
   !> Rebins `old_vals` defined on `old_bins` to `new_bins`. An example is
   !> rebinning a high resolution spectra of infrared emission of Earth 
-  !> to a lower resolution.
+  !> to a lower resolution. I have optimized the routine for downbinning
+  !> data. Upbinning seems like an unlikely application.
   subroutine rebin(old_bins, old_vals, new_bins, new_vals, ierr)
     use futils_fastmath, only: fast_rebin => rebin
     real(dp), intent(in) :: old_bins(:) !! Edges of bins for which old_vals are defined
