@@ -127,10 +127,10 @@ contains
     enddo
     
     call tm%start()
-    do i = 1,4000000
+    do i = 1,6000000
       call rebin(old_bins, old_vals, new_bins, new_vals)
     enddo
-    call tm%finish("Time to rebin (s): ", niters = 4000000)
+    call tm%finish("Time to rebin (s): ", niters = 6000000)
     write(*,"(a,es10.3)") "new_vals(1) = ",new_vals(1)
     
   end subroutine

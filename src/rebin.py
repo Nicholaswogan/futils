@@ -1,8 +1,8 @@
 import numpy as np
 import numba as nb
 
-@nb.njit
-def rebin(old_bins, old_vals, new_bins, err_check = True):
+@nb.njit(fastmath=True)
+def rebin(old_bins, old_vals, new_bins, err_check = False):
     """Rebins data defined on bins onto a new set of target bins.
 
     Parameters

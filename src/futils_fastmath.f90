@@ -96,6 +96,10 @@ contains
         
           b2 = new_bins(i+1) - old_bins(j)
           new_vals(i) = new_vals(i) + (b2/b1)*old_vals(j)
+          
+          ! need to move to the next new_bin
+          l = j
+          exit
         
         ! ________    (old bin)
         !   ____      (new bin) 
@@ -103,21 +107,21 @@ contains
           
           new_vals(i) = new_vals(i) + old_vals(j)
           
+          ! need to move to the next new_bin
+          l = j
+          exit
+            
+        !  There are two remaining cases:
         !         _____   (old bin)
         !   ____          (new bin) 
-        ! elseif (old_bins(j) > new_bins(i+1)) then
-        else
-          ! time to move onto the next new_bin
-          l = j - 1
-          exit
-          
-          ! This is a bit unsafe. If we have the case
-          !  ____           (old bin)
-          !        _____    (new bin) 
-          ! on j == 1, then l = 0, and we will read
-          ! outside of the old bins. This is only possible if
-          ! ierr is NOT an argument. Error checking determines
-          ! if there is some overlap between the bins.
+        ! 
+        ! and
+        !  ____           (old bin)
+        !        _____    (new bin) 
+        ! 
+        ! These cases can occur on either end of re-binning.
+        ! However this is OK. The part of old_bin that does not
+        ! overlap with new_bin on the ends, will just be ignored.
           
         endif
       enddo
