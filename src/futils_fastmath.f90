@@ -18,7 +18,11 @@ contains
     integer, optional, intent(out) :: ierr
     
     integer :: i, j, l, n_old, n_new
-    real(dp) :: b1, b2
+    real(dp) :: b2, b1_inv, v_new
+    
+    real(dp) :: b_old0, b_old1
+    real(dp) :: b_new0, b_new1
+    real(dp) :: v_old
     
     n_old = size(old_vals)
     n_new = size(new_vals)
@@ -66,36 +70,43 @@ contains
       
     endif
     
-    new_vals = 0.0_dp
     l = 1
     
     do i = 1,n_new
-      b1 = new_bins(i+1) - new_bins(i)
+      b_new0 = new_bins(i)
+      b_new1 = new_bins(i+1)
+            
+      b1_inv = 1.0_dp/(b_new1 - b_new0)
+      v_new = 0.0_dp
       do j = l,n_old
+
+        b_old0 = old_bins(j)
+        b_old1 = old_bins(j+1)
+        v_old = old_vals(j)
         ! Several different cases
         
         !    ____    (old bin)
         !  ________  (new bin)
-        if (old_bins(j) > new_bins(i) .and. old_bins(j+1) < new_bins(i+1)) then
+        if (b_old0 > b_new0 .and. b_old1 < b_new1) then
           
-          b2 = old_bins(j+1) - old_bins(j)
-          new_vals(i) = new_vals(i) + (b2/b1)*old_vals(j)
+          b2 = b_old1 - b_old0
+          v_new = v_new + (b2*b1_inv)*v_old
         
         ! ______       (old bin)
         !     ________ (new bin)
-        elseif (old_bins(j) <= new_bins(i) .and. &
-            old_bins(j+1) > new_bins(i) .and. old_bins(j+1) < new_bins(i+1)) then
+        elseif (b_old0 <= b_new0 .and. &
+            b_old1 > b_new0 .and. b_old1 < b_new1) then
           
-          b2 = old_bins(j+1) - new_bins(i)
-          new_vals(i) = new_vals(i) + (b2/b1)*old_vals(j)
+          b2 = b_old1 - b_new0
+          v_new = v_new + (b2*b1_inv)*v_old
           
         !        ____    (old bin)
         !  ________      (new bin)
-        elseif (old_bins(j) >= new_bins(i) .and. &
-                old_bins(j) < new_bins(i+1) .and. old_bins(j+1) > new_bins(i+1)) then
+        elseif (b_old0 >= b_new0 .and. &
+                b_old0 < b_new1 .and. b_old1 > b_new1) then
         
-          b2 = new_bins(i+1) - old_bins(j)
-          new_vals(i) = new_vals(i) + (b2/b1)*old_vals(j)
+          b2 = b_new1 - b_old0
+          v_new = v_new + (b2*b1_inv)*v_old
           
           ! need to move to the next new_bin
           l = j
@@ -103,9 +114,9 @@ contains
         
         ! ________    (old bin)
         !   ____      (new bin) 
-        elseif (old_bins(j) <= new_bins(i) .and. old_bins(j+1) >= new_bins(i+1)) then
+        elseif (b_old0 <= b_new0 .and. b_old1 >= b_new1) then
           
-          new_vals(i) = new_vals(i) + old_vals(j)
+          v_new = v_new + v_old
           
           ! need to move to the next new_bin
           l = j
@@ -125,6 +136,7 @@ contains
           
         endif
       enddo
+      new_vals(i) = v_new
     enddo
     
   end subroutine
