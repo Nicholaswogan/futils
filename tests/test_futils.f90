@@ -2,9 +2,15 @@
 program test_futils
   use futils
   implicit none
+
+  type, extends(brent_class) :: myfunc_type
+    integer :: i = 0    !! function counter
+  end type myfunc_type
     
   call test_addpnt()
   call test_rebin()
+  call test_brent()
+
 contains
   
   subroutine test_addpnt()
@@ -134,5 +140,59 @@ contains
     write(*,"(a,es10.3)") "new_vals(1) = ",new_vals(1)
     
   end subroutine
+
+  subroutine test_brent()
+
+    real(dp) :: r, fzero
+    integer :: iflag
+
+    real(dp), parameter :: ax = 0.0_dp
+    real(dp), parameter :: pi = 3.141592653589793238462643383279_dp
+    real(dp), parameter :: bx = 2.0_dp*pi
+    real(dp), parameter :: tol = 1.0e-8_dp
+
+    type(myfunc_type) :: myfunc
+
+    write(*,*) ''
+    write(*,*) '---------------'
+    write(*,*) ' brent_test'
+    write(*,*) '---------------'
+    write(*,*) ''
+
+    call myfunc%set_function(sin_func) ! set the function
+
+    ! call fmin:
+    ! [the minimum is at 270 deg]
+    myfunc%i = 0
+    r = myfunc%minimize(ax, bx, tol)
+    write(*,*) 'minimum of sin(x) at: ', r*180.0_dp/pi,' deg'
+    write(*,*) 'number of function calls: ', myfunc%i
+
+    ! call zeroin:
+    ! [the root is at pi]
+    myfunc%i = 0
+    call myfunc%find_zero(ax+0.0001_dp, bx/2.0_dp+0.0002, tol, r, fzero, iflag)
+    if (iflag < 0) then
+      error stop "find_zero failed to find root"
+    endif
+    write(*,*) 'root of sin(x) at: ', r*180.0_dp/pi,' deg'
+    write(*,*) 'number of function calls: ', myfunc%i
+
+  end subroutine
+
+  function sin_func(me,x) result(f)
+    !! Example function to minimize: sin(x)
+    class(brent_class),intent(inout) :: me
+    real(dp),intent(in) :: x
+    real(dp) :: f
+
+    f = sin(x)
+
+    select type (me)
+    class is (myfunc_type)
+        me%i = me%i + 1 ! number of function calls
+    end select
+
+  end function
   
 end program

@@ -1,6 +1,8 @@
 
 module futils
   use iso_fortran_env, only: dp => real64
+  use futils_fastmath, only: rebin
+  use futils_brent, only: brent_class
   implicit none
   
   private
@@ -14,6 +16,8 @@ module futils
   public :: replaceStr
   ! sortting
   public :: argsort, sort
+  ! root finding
+  public :: brent_class
   
   type Timer
     integer :: cr, cm, c1, c2
@@ -311,29 +315,6 @@ contains
     enddo
     !_______________________________________________________________________
 
-  end subroutine
-  
-  !> Rebins `old_vals` defined on `old_bins` to `new_bins`. An example is
-  !> rebinning a high resolution spectra of infrared emission of Earth 
-  !> to a lower resolution. I have optimized the routine for downbinning
-  !> data. Upbinning seems like an unlikely application.
-  subroutine rebin(old_bins, old_vals, new_bins, new_vals, ierr)
-    use futils_fastmath, only: fast_rebin => rebin
-    real(dp), intent(in) :: old_bins(:) !! Edges of bins for which old_vals are defined
-    real(dp), intent(in) :: old_vals(:) !! Values defined on old_bins.
-    real(dp), intent(in) :: new_bins(:) !! Edges of target bin that you want to rebin to.
-    real(dp), intent(out) :: new_vals(:) !! Values defined on new_bins (output).
-    integer, optional, intent(out) :: ierr !! Inputs will be checked if ierr
-                                           !! is passes as an argument. if ierr < 0
-                                           !! on return, then there is an issue with
-                                           !! the inputs.
-    
-    if (present(ierr)) then
-      call fast_rebin(old_bins, old_vals, new_bins, new_vals, ierr)
-    else
-      call fast_rebin(old_bins, old_vals, new_bins, new_vals)
-    endif
-    
   end subroutine
 
   ! 1D linear interpolation with constant extrapolation.
