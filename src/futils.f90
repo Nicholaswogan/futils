@@ -2,6 +2,7 @@
 module futils
   use iso_fortran_env, only: dp => real64
   use futils_fastmath, only: rebin
+  use futils_spline, only: spline3
   use futils_brent, only: brent_class
   implicit none
   
@@ -9,9 +10,9 @@ module futils
   
   public :: dp
   ! misc
-  public :: Timer, printf, is_close
+  public :: Timer, printf, is_close, linspace
   ! interpolation
-  public :: addpnt, inter2, rebin, interp
+  public :: addpnt, inter2, rebin, interp, spline3
   ! strings
   public :: replaceStr
   ! sortting
@@ -40,6 +41,26 @@ contains
   !!!!!!!!!!!!!!!!!!!!!!
   !!! misc utilities !!!
   !!!!!!!!!!!!!!!!!!!!!!
+
+  subroutine linspace(from, to, array)
+    real(dp), intent(in) :: from, to
+    real(dp), intent(out) :: array(:)
+    real(dp) :: range
+    integer :: n, i
+    n = size(array)
+    range = to - from
+
+    if (n == 0) return
+
+    if (n == 1) then
+      array(1) = from
+      return
+    end if
+
+    do i=1, n
+      array(i) = from + range * (i - 1) / (n - 1)
+    end do
+  end subroutine
   
   subroutine Timer_start(self)
     class(Timer), intent(inout) :: self
@@ -92,8 +113,15 @@ contains
     else
       tol_ = 1.0e-5_dp
     endif
-    
+
+    if (val1 == val2) then
+      res = .true.
+      return
+    endif
+
     if (val1 < val2 + (val2*tol_) .and. val1 > val2 - (val2*tol_)) then
+      res = .true.
+    elseif (val2 < val1 + (val1*tol_) .and. val2 > val1 - (val1*tol_)) then
       res = .true.
     else
       res = .false.

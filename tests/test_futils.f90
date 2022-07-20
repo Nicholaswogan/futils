@@ -6,12 +6,51 @@ program test_futils
   type, extends(brent_class) :: myfunc_type
     integer :: i = 0    !! function counter
   end type myfunc_type
-    
+  
+  call test_spline3()
   call test_addpnt()
   call test_rebin()
   call test_brent()
 
 contains
+
+  subroutine test_spline3()
+
+    real(dp), allocatable :: x(:)
+    real(dp), allocatable :: y(:)
+    real(dp), allocatable :: xnew(:)
+    real(dp), allocatable :: ynew(:)
+    character(:), allocatable :: err
+    real(dp) :: t(111)
+    integer :: i
+
+    allocate(x(200))
+    allocate(y(200))
+    call linspace(0.0_dp, 1.0_dp, x)
+    call random_number(y)
+
+    allocate(xnew(1))
+    allocate(ynew(1))
+    xnew(1) = 1.5_dp
+
+    call cpu_time(t(1))
+    do i = 1,10000
+      ynew = spline3(x, y, xnew, err)
+    enddo
+    call cpu_time(t(2))
+    if (allocated(err)) then
+      error stop err
+    endif
+    
+    print*,(t(2)-t(1))/10000_dp
+    open(1,file='spline.dat',form='unformatted')
+    write(1) x
+    write(1) y
+    write(1) xnew
+    write(1) ynew
+    close(1)
+
+  end subroutine
   
   subroutine test_addpnt()
     integer, parameter :: ld = 5
