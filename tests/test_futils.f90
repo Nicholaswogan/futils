@@ -4,14 +4,36 @@ program test_futils
   implicit none
 
   type, extends(brent_class) :: myfunc_type
-    integer :: i = 0    !! function counter
-  end type myfunc_type
-  
+    integer :: i = 0 !! function counter
+  end type
+
+  call test_gauss_legendre()
   call test_addpnt()
   call test_rebin()
   call test_brent()
 
 contains
+
+  subroutine test_gauss_legendre()
+    real(dp) :: x(4), w(4)
+    ! result from using scipy.special.roots_legendre
+    real(dp), parameter :: x_scipy(4) = [-0.8611363115940526_dp, -0.3399810435848563_dp, &
+                                          0.3399810435848563_dp, 0.8611363115940526_dp]
+    real(dp), parameter :: w_scipy(4) = [0.3478548451374536_dp, 0.6521451548625464_dp, &
+                                         0.6521451548625464_dp, 0.3478548451374536_dp]
+
+    call gauss_legendre(x, w)
+
+    if (.not. all(is_close(x, x_scipy))) then
+      print*,x/x_scipy
+      error stop 'gauss_legendre does not match scipy'
+    endif
+    if (.not. all(is_close(w, w_scipy))) then
+      print*,w/w_scipy
+      error stop 'gauss_legendre does not match scipy'
+    endif
+
+  end subroutine
   
   subroutine test_addpnt()
     integer, parameter :: ld = 5
