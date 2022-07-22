@@ -1,8 +1,7 @@
 
 module futils
   use iso_fortran_env, only: dp => real64
-  use futils_fastmath, only: rebin
-  use futils_spline, only: spline3
+  use futils_rebin, only: rebin
   use futils_brent, only: brent_class
   implicit none
   
@@ -12,7 +11,7 @@ module futils
   ! misc
   public :: Timer, printf, is_close, linspace
   ! interpolation
-  public :: addpnt, inter2, rebin, interp, spline3
+  public :: addpnt, inter2, rebin, interp
   ! strings
   public :: replaceStr
   ! sortting

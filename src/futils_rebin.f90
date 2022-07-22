@@ -1,12 +1,9 @@
 
-module futils_fastmath
+module futils_rebin
   use iso_fortran_env, only: dp => real64
   implicit none
   private
   public :: rebin
-  
-  !! Routines that will be compiled with -ffast-math
-  !! for an extra speed boost.
   
 contains
 

@@ -1,23 +1,13 @@
-add_library(futils_fastmath futils_fastmath.f90)
 
-file(GLOB LAPACK_FILES lapack/*.f)
 add_library(futils 
   futils.f90 
   futils_brent.f90 
-  futils_lapack.f90
-  futils_spline.f90
-  ${LAPACK_FILES}
+  futils_rebin.f90
 )
-target_link_libraries(futils futils_fastmath)
 
 # Special compiler options
 if ("${CMAKE_Fortran_COMPILER_ID}" MATCHES "GNU")
   if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-    target_compile_options(futils_fastmath PRIVATE -Wunused -fcheck=all)
     target_compile_options(futils PRIVATE -Wunused -fcheck=all)
-  endif()
-  
-  if (CMAKE_BUILD_TYPE STREQUAL "Release")
-    target_compile_options(futils_fastmath PRIVATE -ffast-math -finline-functions -ftree-vectorize -funroll-loops)
   endif()
 endif()
