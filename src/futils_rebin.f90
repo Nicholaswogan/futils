@@ -99,7 +99,7 @@ contains
         ! ______       (old bin)
         !     ________ (new bin)
         elseif (b_old0 <= b_new0 .and. &
-            b_old1 > b_new0 .and. b_old1 < b_new1) then
+            b_old1 > b_new0 .and. b_old1 <= b_new1) then
           
           b2 = b_old1 - b_new0
           v_new = v_new + (b2*b1_inv)*v_old
