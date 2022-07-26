@@ -7,6 +7,7 @@ program test_futils
     integer :: i = 0 !! function counter
   end type
 
+  call test_conserving_rebin()
   call test_gauss_legendre()
   call test_addpnt()
   call test_rebin()
@@ -153,6 +154,54 @@ contains
       endif
     enddo
     
+  end subroutine
+
+  subroutine test_conserving_rebin()
+      
+    real(dp), allocatable :: old_bins(:)
+    real(dp), allocatable :: old_vals(:)
+    real(dp), allocatable :: new_bins(:)
+    real(dp), allocatable :: new_vals(:)
+    integer :: ierr
+    real(dp), parameter :: tol = 1.0e-10_dp
+
+
+    ! Case 1: perfect overlap
+    old_bins = [0.0_dp, 1.0_dp, 2.0_dp, 3.0_dp, 4.0_dp]
+    old_vals = [1.0_dp, 1.1_dp, 1.2_dp, 1.3_dp]
+
+    new_bins = [0.0_dp, 1.1_dp, 3.1_dp, 3.2_dp, 4.0_dp]
+    allocate(new_vals(size(new_bins)-1))
+
+    call conserving_rebin(old_bins, old_vals, new_bins, new_vals, ierr)
+    if (ierr /= 0) error stop "conserving_rebin: ierr not zero."
+
+    deallocate(old_bins, old_vals, new_bins, new_vals)
+
+    ! Case 2: new bins shifted left
+    old_bins = [0.0_dp, 1.0_dp, 2.0_dp, 3.0_dp, 4.0_dp]
+    old_vals = [1.0_dp, 1.1_dp, 1.2_dp, 1.3_dp]
+
+    new_bins = [-1.0_dp, -0.1_dp, 1.1_dp, 3.1_dp, 3.2_dp, 3.4_dp]
+    allocate(new_vals(size(new_bins)-1))
+
+    call conserving_rebin(old_bins, old_vals, new_bins, new_vals, ierr)
+    if (ierr /= 0) error stop "conserving_rebin: ierr not zero."
+
+    deallocate(old_bins, old_vals, new_bins, new_vals)
+
+    ! Case 3: new bins shifted right
+    old_bins = [0.0_dp, 1.0_dp, 2.0_dp, 3.0_dp, 4.0_dp]
+    old_vals = [1.0_dp, 1.1_dp, 1.2_dp, 1.3_dp]
+
+    new_bins = [2.9_dp, 2.99_dp, 3.01_dp, 3.1_dp, 3.2_dp, 10.0_dp]
+    allocate(new_vals(size(new_bins)-1))
+
+    call conserving_rebin(old_bins, old_vals, new_bins, new_vals, ierr)
+    if (ierr /= 0) error stop "conserving_rebin: ierr not zero."
+
+    deallocate(old_bins, old_vals, new_bins, new_vals)
+
   end subroutine
 
   subroutine test_brent()

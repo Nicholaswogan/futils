@@ -3,7 +3,7 @@ module futils_rebin
   use iso_fortran_env, only: dp => real64
   implicit none
   private
-  public :: rebin
+  public :: rebin, conserving_rebin
   
 contains
 
@@ -46,28 +46,17 @@ contains
         return
       endif
       
-      ! check that new bins overlap with the old bins
-      if (new_bins(1) < old_bins(1) .and. new_bins(2) < old_bins(1)) then
-        ierr = -3
-        return
-      endif
-      
-      if (new_bins(n_new) > old_bins(n_old+1) .and. new_bins(n_new+1) > old_bins(n_old+1)) then
-        ierr = -4
-        return
-      endif
-      
       ! check that bins are all increasing
       do i = 1,n_old
         if (old_bins(i+1) <= old_bins(i)) then
-          ierr = -5
+          ierr = -3
           return
         endif
       enddo
       
       do i = 1,n_new
         if (new_bins(i+1) <= new_bins(i)) then
-          ierr = -6
+          ierr = -4
           return
         endif
       enddo
@@ -143,6 +132,122 @@ contains
       new_vals(i) = v_new
     enddo
     
+  end subroutine
+
+  subroutine conserving_rebin(old_bins, old_vals, new_bins, new_vals, ierr)
+    real(dp), intent(in) :: old_bins(:) !! Edges of bins for which old_vals are defined
+    real(dp), intent(in) :: old_vals(:) !! Values defined on old_bins.
+    real(dp), intent(in) :: new_bins(:) !! Edges of target bin that you want to rebin to.
+    real(dp), intent(out) :: new_vals(:) !! Values defined on new_bins (output).
+    integer, optional, intent(out) :: ierr !! Inputs will be checked if ierr
+                                           !! is passes as an argument. if ierr < 0
+                                           !! on return, then there is an issue with
+                                           !! the inputs.
+    integer :: i, l, n_old, n_new
+    real(dp) :: val
+    
+    n_old = size(old_vals)
+    n_new = size(new_vals)
+
+    call rebin(old_bins, old_vals, new_bins, new_vals, ierr)
+    if (present(ierr)) then
+      if (ierr /= 0) return
+    endif
+
+    !!!!!!!!!!!!!!!!!
+    !!! Left edge !!!
+    !!!!!!!!!!!!!!!!!
+    !  ______>    (old bins)
+    !  ______>    (new bins)
+    if (new_bins(1) == old_bins(1)) then
+      ! Do nothing. mass is conserved.
+
+    !    ____>    (old bins)
+    !  ______>    (new bins)
+    elseif (new_bins(1) < old_bins(1)) then
+      ! mass is conserved, but lets distribute lowest bin in new_bin
+      ! among all the lower bins, to avoid zero values
+
+      do i = 1,n_new
+        if (new_bins(i) > old_bins(1)) then
+          l = i - 1
+          exit
+        endif
+      enddo
+      new_vals(1:l) = new_vals(l)*((new_bins(l+1) - new_bins(l))/(new_bins(l+1) - new_bins(1)))
+
+    !  ______>    (old bins)
+    !    ____>    (new bins)
+    elseif (new_bins(1) > old_bins(1)) then
+      ! mass has been lost. Find the lost mass, and add it to the
+      ! first grid cell
+
+      val = 0.0_dp
+      do i = 1,n_old
+        if (old_bins(i+1) > new_bins(1)) then
+          val = val + old_vals(i)*(new_bins(1) - old_bins(i))
+          exit
+        else
+          val = val + old_vals(i)*(old_bins(i+1)-old_bins(i))
+        endif
+      enddo
+      new_vals(1) = new_vals(1) + val/(new_bins(2) - new_bins(1))
+
+    endif
+
+    !!!!!!!!!!!!!!!!!!
+    !!! Right edge !!!
+    !!!!!!!!!!!!!!!!!!
+    !  <______    (old bins)
+    !  <______    (new bins)
+    if (new_bins(n_new+1) == old_bins(n_old+1)) then
+      ! Do nothing
+
+    !  <____      (old bins)
+    !  <______    (new bins)
+    elseif (new_bins(n_new+1) > old_bins(n_old+1)) then
+      ! Mass is conserved, but lets re-distribute mass
+      ! so that there are no zero new_bins
+
+      do i = n_new+1,1,-1
+        if (new_bins(i) < old_bins(n_old+1)) then
+          l = i
+          exit
+        endif
+      enddo
+      new_vals(l:) = new_vals(l)*((new_bins(l+1) - new_bins(l))/(new_bins(n_new+1) - new_bins(l)))
+    
+    !  <______    (old bins)
+    !  <____      (new bins)
+    elseif (new_bins(n_new+1) < old_bins(n_old+1)) then
+      ! Mass is not conserved. Let's add lost mass to furthest right cell in 
+      ! new_bins
+
+      val = 0.0_dp
+      do i = n_old,1,-1
+        if (old_bins(i) < new_bins(n_new+1)) then
+          val = val + old_vals(i)*(old_bins(i+1) - new_bins(n_new+1))
+          exit
+        else
+          val = val + old_vals(i)*(old_bins(i+1)-old_bins(i))
+        endif
+      enddo
+      new_vals(n_new) = new_vals(n_new) + val/(new_bins(n_new+1) - new_bins(n_new))
+    endif
+
+    if (present(ierr)) then; block
+      use futils_misc, only: is_close
+      real(dp) :: old_mass, new_mass
+      ! check for mass conservation
+      old_mass = sum(old_vals*(old_bins(2:)-old_bins(1:size(old_bins)-1)))
+      new_mass = sum(new_vals*(new_bins(2:)-new_bins(1:size(new_bins)-1)))
+
+      if (.not. is_close(old_mass, new_mass, tol = 1.0e-10_dp)) then
+        ierr = -5
+        return
+      endif
+    end block; endif
+
   end subroutine
   
 end module
