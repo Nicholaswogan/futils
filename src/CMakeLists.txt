@@ -1,3 +1,7 @@
+add_library(specfun specfun.f)
+if ("${CMAKE_Fortran_COMPILER_ID}" MATCHES "GNU")
+  target_compile_options(specfun PRIVATE -std=legacy)
+endif()
 
 add_library(futils
   futils_brent.f90 
@@ -6,6 +10,7 @@ add_library(futils
   futils_misc.f90
   futils.f90 
 )
+target_link_libraries(futils specfun)
 
 # Special compiler options
 if ("${CMAKE_Fortran_COMPILER_ID}" MATCHES "GNU")

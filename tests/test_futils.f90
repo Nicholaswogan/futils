@@ -8,12 +8,20 @@ program test_futils
   end type
 
   call test_conserving_rebin()
+  call test_expi()
   call test_gauss_legendre()
   call test_addpnt()
   call test_rebin()
   call test_brent()
 
 contains
+
+  subroutine test_expi()
+    real(dp), parameter :: scipy_result = 1665628.0229506120_dp
+    if (.not.is_close(scipy_result, expi(17.1_dp),tol=1.0e-12_dp)) then
+      error stop "expi does not match scipy"
+    endif
+  end subroutine
 
   subroutine test_gauss_legendre()
     real(dp) :: x(4), w(4)

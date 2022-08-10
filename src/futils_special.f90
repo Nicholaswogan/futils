@@ -7,15 +7,31 @@ module futils_special
 
   public :: legendre, dlegendre
   public :: gauss_legendre
+  public :: expi
 
   real(dp), parameter :: pi = acos(-1._dp)
   real(dp), parameter :: tolerance = 4._dp*epsilon(1._dp)
   integer, parameter :: newton_iters = 100
 
+  interface
+    subroutine eix(x, ei)
+      import :: dp
+      implicit none
+      real(dp), intent(in) :: x
+      real(dp), intent(out) :: ei
+    end subroutine
+  end interface
+
 contains
 
+  function expi(x) result(res)
+    real(dp), intent(in) :: x
+    real(dp) :: res
+    call eix(x, res)
+  end function
+
   ! same as scipy.special.roots_legendre
-  pure module subroutine gauss_legendre(x, w, interval)
+  pure subroutine gauss_legendre(x, w, interval)
     real(dp), intent(out) :: x(:), w(:)
     real(dp), intent(in), optional :: interval(2)
 

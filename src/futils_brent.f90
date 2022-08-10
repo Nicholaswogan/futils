@@ -366,7 +366,6 @@ contains
         else
 
           iflag = -1
-          write(error_unit, "(A)") "Error in zeroin: f(ax) and f(bx) do not have different signs."
 
         end if
       end if

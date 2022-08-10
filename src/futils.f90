@@ -3,7 +3,7 @@ module futils
   use iso_fortran_env, only: dp => real64
   use futils_rebin, only: rebin, conserving_rebin
   use futils_brent, only: brent_class
-  use futils_special, only: gauss_legendre, legendre, dlegendre
+  use futils_special, only: gauss_legendre, legendre, dlegendre, expi
   use futils_misc, only: is_close
   implicit none
   
@@ -11,7 +11,7 @@ module futils
   
   public :: dp
   ! special functions
-  public :: gauss_legendre, legendre, dlegendre
+  public :: gauss_legendre, legendre, dlegendre, expi
   ! misc
   public :: Timer, printf, is_close, linspace
   ! interpolation
