@@ -13,7 +13,7 @@ module futils
   ! special functions
   public :: gauss_legendre, legendre, dlegendre, expi
   ! misc
-  public :: Timer, printf, is_close, linspace
+  public :: Timer, printf, is_close, linspace, FileCloser
   ! interpolation
   public :: addpnt, inter2, rebin, conserving_rebin, interp
   ! strings
@@ -30,6 +30,12 @@ module futils
     procedure :: start => Timer_start
     procedure :: finish => Timer_finish
   end type
+
+  type FileCloser
+    integer :: unit
+  contains
+    final :: FileCloser_final
+  end type
   
   interface argsort
     module procedure iargsort, rargsort
@@ -44,6 +50,11 @@ contains
   !!!!!!!!!!!!!!!!!!!!!!
   !!! misc utilities !!!
   !!!!!!!!!!!!!!!!!!!!!!
+
+  subroutine FileCloser_final(self)
+    type(FileCloser), intent(inout) :: self
+    close(self%unit)
+  end subroutine
 
   subroutine linspace(from, to, array)
     real(dp), intent(in) :: from, to
