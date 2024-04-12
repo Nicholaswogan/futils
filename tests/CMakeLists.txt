@@ -5,6 +5,6 @@ target_include_directories(test_futils PUBLIC ${CMAKE_Fortran_MODULE_DIRECTORY})
 # Special compiler options
 if ("${CMAKE_Fortran_COMPILER_ID}" MATCHES "GNU")
   if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-    target_compile_options(test_futils PRIVATE -Wunused -fcheck=all)
+    target_compile_options(test_futils PRIVATE -Wunused -Wimplicit-interface -fimplicit-none -fcheck=all,no-array-temps)
   endif()
 endif()

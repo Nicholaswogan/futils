@@ -15,6 +15,6 @@ target_link_libraries(futils specfun)
 # Special compiler options
 if ("${CMAKE_Fortran_COMPILER_ID}" MATCHES "GNU")
   if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-    target_compile_options(futils PRIVATE -Wall -fcheck=all)
+    target_compile_options(futils PRIVATE -Wunused -Wimplicit-interface -fimplicit-none -fcheck=all,no-array-temps)
   endif()
 endif()

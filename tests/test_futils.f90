@@ -7,6 +7,7 @@ program test_futils
     integer :: i = 0 !! function counter
   end type
 
+  call test_interp()
   call test_conserving_rebin()
   call test_expi()
   call test_gauss_legendre()
@@ -15,6 +16,27 @@ program test_futils
   call test_brent()
 
 contains
+
+  subroutine test_interp()
+    real(dp), allocatable :: xg(:), yg(:), x(:), y(:), yg_scipy(:)
+    integer :: ierr
+
+    x = [1.0_dp, 2.0_dp, 3.0_dp, 4.0_dp, 5.0_dp]
+    y = [2.0_dp, 3.0_dp, 2.8_dp, 3.2_dp, 4.6_dp]
+    xg = [0.0_dp, 4.0_dp, 6.0_dp]
+    allocate(yg(size(xg)))
+    yg_scipy = [1.0_dp , 3.2_dp, 6.0_dp]
+
+    call interp(xg, x, y, linear_extrap=.true., yg=yg, ierr=ierr)
+    if (ierr /= 0) then
+      print*,ierr
+      error stop "interp: returned error"
+    endif
+    if (.not. all(is_close(yg, yg_scipy))) then
+      error stop "interp: returned incorrect values"
+    endif
+
+  end subroutine
 
   subroutine test_expi()
     real(dp), parameter :: scipy_result = 1665628.0229506120_dp

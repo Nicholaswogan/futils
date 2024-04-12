@@ -44,6 +44,10 @@ module futils
   interface sort
     module procedure sortNums, sortINums
   end interface
+
+  interface interp
+    module procedure :: interp_old, interp_new
+  end interface
   
 contains
   
@@ -330,8 +334,73 @@ contains
 
   end subroutine
 
+  !> Better new interp that allows for linear extrapolation.
+  subroutine interp_new(xg, x, y, linear_extrap, yg, ierr)
+    real(dp), intent(in) :: xg(:) !! new grid
+    real(dp), intent(in) :: x(:), y(:) !! old data
+    logical, optional, intent(in) :: linear_extrap
+    real(dp), intent(out) :: yg(:) !! new data
+    integer, optional, intent(out) :: ierr
+
+    logical :: linear_extrap_
+    integer :: ng, n
+    real(dp), allocatable :: x_copy(:), y_copy(:)
+    real(dp) :: slope, intercept, tmp
+
+    ng = size(xg)
+    n = size(x)
+
+    if (present(ierr)) then
+      ierr = 0
+      if (ng /= size(yg)) then
+        ierr = -3
+        return
+      endif
+      if (n /= size(y)) then
+        ierr = -4
+        return
+      endif
+      if (n < 2) then
+        ierr = -5
+        return
+      endif
+    endif
+
+    if (present(linear_extrap)) then
+      linear_extrap_ = linear_extrap
+    else
+      linear_extrap_ = .false.
+    endif
+
+    if (.not.linear_extrap_) then
+      call interp_old(ng, n, xg, x, y, yg, ierr)
+      return
+    endif 
+
+    ! We do linear extrapolation
+    x_copy = x
+    y_copy = y
+    if (xg(ng) > x(n)) then
+      slope = (y(n) - y(n-1))/(x(n) - x(n-1))
+      intercept = y(n) - slope*x(n)
+      tmp = slope*xg(ng) + intercept
+      x_copy = [x_copy,xg(ng)]
+      y_copy = [y_copy,tmp]
+    endif
+    if (xg(1) < x(1)) then
+      slope = (y(2) - y(1))/(x(2) - x(1))
+      intercept = y(1) - slope*x(1)
+      tmp = slope*xg(1) + intercept
+      x_copy = [xg(1),x_copy]
+      y_copy = [tmp,y_copy]
+    endif
+
+    call interp_old(ng, size(x_copy), xg, x_copy, y_copy, yg, ierr)
+
+  end subroutine
+
   ! 1D linear interpolation with constant extrapolation.
-  subroutine interp(ng, n, xg, x, y, yg, ierr)
+  subroutine interp_old(ng, n, xg, x, y, yg, ierr)
     implicit none
     integer, intent(in) :: ng ! length of new grid (we interpolate to this new grid)
     integer, intent(in) :: n ! length of old grid
