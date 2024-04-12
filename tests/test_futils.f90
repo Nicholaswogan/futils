@@ -27,7 +27,7 @@ contains
     allocate(yg(size(xg)))
     yg_scipy = [1.0_dp , 3.2_dp, 6.0_dp]
 
-    call interp(xg, x, y, linear_extrap=.true., yg=yg, ierr=ierr)
+    call interp(xg, x, y, yg, linear_extrap=.true., ierr=ierr)
     if (ierr /= 0) then
       print*,ierr
       error stop "interp: returned error"

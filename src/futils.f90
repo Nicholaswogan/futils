@@ -335,11 +335,11 @@ contains
   end subroutine
 
   !> Better new interp that allows for linear extrapolation.
-  subroutine interp_new(xg, x, y, linear_extrap, yg, ierr)
+  subroutine interp_new(xg, x, y, yg, linear_extrap, ierr)
     real(dp), intent(in) :: xg(:) !! new grid
     real(dp), intent(in) :: x(:), y(:) !! old data
-    logical, optional, intent(in) :: linear_extrap
     real(dp), intent(out) :: yg(:) !! new data
+    logical, optional, intent(in) :: linear_extrap
     integer, optional, intent(out) :: ierr
 
     logical :: linear_extrap_
