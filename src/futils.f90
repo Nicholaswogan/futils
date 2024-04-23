@@ -19,7 +19,7 @@ module futils
   ! strings
   public :: replaceStr
   ! sorting
-  public :: argsort, sort
+  public :: argsort, sort, searchsorted
   ! root finding
   public :: brent_class
   
@@ -451,6 +451,40 @@ contains
     enddo
     
   end subroutine
+
+  !> Mimics numpy.searchsorted
+  function searchsorted(arr, val) result(ind)
+    real(dp), intent(in) :: arr(:) !! Input sorted array
+    real(dp), intent(in) :: val !! Value to compare to arr
+    integer :: ind !! Index that satisfies arr(i-1) < val <= arr(i)
+
+    integer :: low, high, mid
+
+    if (val <= arr(1)) then
+      ind = 1
+      return
+    endif
+
+    if (val > arr(size(arr))) then
+      ind = size(arr) + 1
+      return
+    endif
+
+    low = 1
+    high = size(arr)
+    do
+      mid = (low + high)/2
+      if (val > arr(mid)) then
+        low = mid
+      else
+        high = mid
+      endif
+      if (high-1 == low) exit
+    enddo
+
+    ind = high
+
+  end function
   
   !!!!!!!!!!!!!!!!!!!!!!!!
   !!! String Utilities !!!

@@ -7,6 +7,8 @@ program test_futils
     integer :: i = 0 !! function counter
   end type
 
+  call test_searchsorted()
+  stop
   call test_interp()
   call test_conserving_rebin()
   call test_expi()
@@ -16,6 +18,124 @@ program test_futils
   call test_brent()
 
 contains
+
+  subroutine test_searchsorted()
+    real(dp), allocatable :: arr(:)
+    real(dp) :: val
+    integer :: ind
+
+    arr = [1.0_dp, 2.0_dp, 3.0_dp, 4.0_dp, 5.0_dp, 6.0_dp]
+    val = 5.1_dp
+    ind = searchsorted(arr, val)
+    if (ind /= 6) then
+      error stop "test_searchsorted error"
+    endif
+
+    val = 3.1_dp
+    ind = searchsorted(arr, val)
+    if (ind /= 4) then
+      error stop "test_searchsorted error"
+    endif
+
+    val = 3.0_dp
+    ind = searchsorted(arr, val)
+    if (ind /= 3) then
+      error stop "test_searchsorted error"
+    endif
+
+    val = 6.0_dp
+    ind = searchsorted(arr, val)
+    if (ind /= 6) then
+      error stop "test_searchsorted error"
+    endif
+
+    val = 7.0_dp
+    ind = searchsorted(arr, val)
+    if (ind /= 7) then
+      error stop "test_searchsorted error"
+    endif
+
+    val = 1.0_dp
+    ind = searchsorted(arr, val)
+    if (ind /= 1) then
+      error stop "test_searchsorted error"
+    endif
+
+    val = 0.0_dp
+    ind = searchsorted(arr, val)
+    if (ind /= 1) then
+      error stop "test_searchsorted error"
+    endif
+
+    val = 1.1_dp
+    ind = searchsorted(arr, val)
+    if (ind /= 2) then
+      error stop "test_searchsorted error"
+    endif
+
+    arr = [1.0_dp]
+    val = 1.0_dp
+    ind = searchsorted(arr, val)
+    if (ind /= 1) then
+      error stop "test_searchsorted error"
+    endif
+
+    val = 0.0_dp
+    ind = searchsorted(arr, val)
+    if (ind /= 1) then
+      error stop "test_searchsorted error"
+    endif
+
+    val = 2.0_dp
+    ind = searchsorted(arr, val)
+    if (ind /= 2) then
+      error stop "test_searchsorted error"
+    endif
+
+    arr = [1.0_dp, 2.0_dp, 3.0_dp, 4.0_dp, 5.0_dp, 6.0_dp, 7.0_dp]
+    val = 2.0_dp
+    ind = searchsorted(arr, val)
+    if (ind /= 2) then
+      error stop "test_searchsorted error"
+    endif
+
+    val = 1.1_dp
+    ind = searchsorted(arr, val)
+    if (ind /= 2) then
+      error stop "test_searchsorted error"
+    endif
+
+    val = 1.0_dp
+    ind = searchsorted(arr, val)
+    if (ind /= 1) then
+      error stop "test_searchsorted error"
+    endif
+
+    val = 0.1_dp
+    ind = searchsorted(arr, val)
+    if (ind /= 1) then
+      error stop "test_searchsorted error"
+    endif
+
+    val = 7.1_dp
+    ind = searchsorted(arr, val)
+    if (ind /= 8) then
+      error stop "test_searchsorted error"
+    endif
+
+    val = 7.0_dp
+    ind = searchsorted(arr, val)
+    if (ind /= 7) then
+      error stop "test_searchsorted error"
+    endif
+
+    val = 6.9_dp
+    ind = searchsorted(arr, val)
+    if (ind /= 7) then
+      error stop "test_searchsorted error"
+    endif
+
+  end subroutine
 
   subroutine test_interp()
     real(dp), allocatable :: xg(:), yg(:), x(:), y(:), yg_scipy(:)
