@@ -7,8 +7,8 @@ program test_futils
     integer :: i = 0 !! function counter
   end type
 
+  call test_sort()
   call test_searchsorted()
-  stop
   call test_interp()
   call test_conserving_rebin()
   call test_expi()
@@ -18,6 +18,26 @@ program test_futils
   call test_brent()
 
 contains
+
+  subroutine test_sort()
+    real(dp), allocatable :: arr(:), arr_sorted(:)
+    integer, allocatable :: iarr(:), iarr_sorted(:)
+    
+    arr = [1.0_dp, 0.0_dp, 6.0_dp, 3.0_dp, 4.0_dp]
+    arr_sorted = [0.0_dp, 1.0_dp, 3.0_dp, 4.0_dp, 6.0_dp]
+    call sort(arr)
+    if (.not. all(is_close(arr, arr_sorted))) then
+      error stop "test_sort test failed"
+    endif
+
+    iarr = [1, 0, 6, 3, 4, 10, 2]
+    iarr_sorted = [0, 1, 2, 3, 4, 6, 10]
+    call sort(iarr)
+    if (.not. all(iarr == iarr_sorted)) then
+      error stop "test_sort test failed"
+    endif
+
+  end subroutine
 
   subroutine test_searchsorted()
     real(dp), allocatable :: arr(:)
