@@ -57,7 +57,9 @@ contains
 
   subroutine FileCloser_final(self)
     type(FileCloser), intent(inout) :: self
-    close(self%unit)
+    if (self%unit /= -1) then
+      close(self%unit)
+    endif
   end subroutine
 
   subroutine linspace(from, to, array)
