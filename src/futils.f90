@@ -32,7 +32,7 @@ module futils
   end type
 
   type FileCloser
-    integer :: unit
+    integer :: unit = -1
   contains
     final :: FileCloser_final
   end type
