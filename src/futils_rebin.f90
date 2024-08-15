@@ -429,6 +429,11 @@ contains
         endif
       enddo
 
+      if (size(wv) <= 1) then
+        ierr = -14
+        return
+      endif
+
     endif
 
     wavl(1) = wv(1) - (wv(2) - wv(1))/2.0_dp
@@ -515,6 +520,8 @@ contains
       err = '`size(wv)+1` must equal `size(wavl)`'
     elseif (ierr == -13) then
       err = '`wv` must be strictly increasing'
+    elseif (ierr == -14) then
+      err = '`wv` must have a size >= 1'
     else
       err = 'Unknown error'
     endif
