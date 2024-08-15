@@ -14,6 +14,7 @@ program test_futils
   call test_expi()
   call test_gauss_legendre()
   call test_addpnt()
+  call test_rebin_with_errors()
   call test_rebin()
   call test_brent()
 
@@ -225,6 +226,64 @@ contains
     if (.not. is_close(y(3), y_new)) error stop "test_addpnt: y(3) /= y_new"
     if (n /= ld) error stop "test_addpnt: n /= 5"
   
+  end subroutine
+
+  subroutine test_rebin_with_errors()
+
+    integer :: ierr
+    real(dp), allocatable :: flux_new(:), err_new(:)
+
+    real(dp), parameter :: wavl(*) = &
+    [ &
+      1.0000000000000000e+00_dp, 1.2857142857142856e+00_dp, 1.5714285714285714e+00_dp, 1.8571428571428572e+00_dp, &
+      2.1428571428571428e+00_dp, 2.4285714285714284e+00_dp, 2.7142857142857144e+00_dp, 3.0000000000000000e+00_dp, &
+      3.2857142857142856e+00_dp, 3.5714285714285712e+00_dp, 3.8571428571428568e+00_dp, 4.1428571428571423e+00_dp, &
+      4.4285714285714288e+00_dp, 4.7142857142857135e+00_dp, 5.0000000000000000e+00_dp &
+    ]
+    real(dp), parameter :: flux(*) = &
+    [ &
+      9.0982291294112394e-01_dp, 9.8990307637212382e-01_dp, 9.8972304885982143e-01_dp, 9.0929742682568171e-01_dp, &
+      7.5514702623165808e-01_dp, 5.3977018240064412e-01_dp, 2.8062939951435684e-01_dp, -1.2644889303772900e-03_dp, &
+      -2.8305585408225559e-01_dp, -5.4189737955940476e-01_dp, -7.5680249530792798e-01_dp, -9.1034694431078278e-01_dp, &
+      -9.9008152109583547e-01_dp, -9.8954143884678003e-01_dp &
+    ]
+    real(dp), parameter :: err(*) = &
+    [ &
+      7.7440675196366238e-01_dp, 8.5759468318620979e-01_dp, 8.0138168803582199e-01_dp, 7.7244159149844838e-01_dp, &
+      7.1182739966945241e-01_dp, 8.2294705653332811e-01_dp, 7.1879360563134620e-01_dp, 9.4588650039103994e-01_dp, &
+      9.8183138025051464e-01_dp, 6.9172075941288891e-01_dp, 8.9586251904133229e-01_dp, 7.6444745987645224e-01_dp, &
+      7.8402228054696610e-01_dp, 9.6279831914633052e-01_dp &
+    ]
+    real(dp), parameter :: wavl_new(*) = &
+    [ &
+      1.1000000000000001e+00_dp, 2.0000000000000000e+00_dp, 2.8999999999999999e+00_dp, 3.7999999999999998e+00_dp, &
+      4.6999999999999993e+00_dp, 5.0000000000000000e+00_dp &
+    ]
+    ! Correct values were computed with https://github.com/ACCarnall/spectres
+    real(dp), parameter :: flux_new_correct(*) = &
+    [ &
+      9.6052689906556088e-01_dp, 6.1332540689824611e-01_dp, -1.9670411327940693e-01_dp, -8.6225598748305898e-01_dp, &
+      -9.8956715704911591e-01_dp &
+    ]
+    real(dp), parameter :: err_new_correct(*) = &
+    [ &
+      4.2357147603948003e-01_dp, 3.9541301062417333e-01_dp, 4.7387917075490427e-01_dp, 4.4454049374724319e-01_dp, &
+      9.1771051546596749e-01_dp &
+    ]
+
+    allocate(flux_new(size(wavl_new)-1), err_new(size(wavl_new)-1))
+
+    call rebin_with_errors(wavl, flux, err, wavl_new, flux_new, err_new, ierr)
+    if (ierr /= 0) error stop "rebin: ierr not zero."
+
+    if (.not. all(is_close(flux_new, flux_new_correct, tol = 1.0e-10_dp))) then
+      error stop "rebin_with_errors: returned incorrect values"
+    endif
+
+    if (.not. all(is_close(err_new, err_new_correct, tol = 1.0e-10_dp))) then
+      error stop "rebin_with_errors: returned incorrect errors"
+    endif
+
   end subroutine
   
   subroutine test_rebin()

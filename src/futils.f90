@@ -1,7 +1,7 @@
 
 module futils
   use iso_fortran_env, only: dp => real64
-  use futils_rebin, only: rebin, conserving_rebin
+  use futils_rebin, only: rebin, rebin_with_errors, conserving_rebin
   use futils_brent, only: brent_class
   use futils_special, only: gauss_legendre, legendre, dlegendre, expi
   use futils_misc, only: is_close
@@ -15,7 +15,7 @@ module futils
   ! misc
   public :: Timer, printf, is_close, linspace, FileCloser
   ! interpolation
-  public :: addpnt, inter2, rebin, conserving_rebin, interp
+  public :: addpnt, inter2, rebin, rebin_with_errors, conserving_rebin, interp
   ! strings
   public :: replaceStr
   ! sorting
