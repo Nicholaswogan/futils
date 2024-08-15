@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.14)
 
-project(FUTILS LANGUAGES Fortran VERSION "0.1.11")
+project(FUTILS LANGUAGES Fortran VERSION "0.1.12")
 
 set(CMAKE_Fortran_MODULE_DIRECTORY "${CMAKE_BINARY_DIR}/modules")
 
