@@ -16,6 +16,8 @@ program test_futils
   call test_addpnt()
   call test_rebin_with_errors()
   call test_rebin()
+  call test_grid_at_resolution()
+  call test_make_bins()
   call test_brent()
 
 contains
@@ -430,6 +432,50 @@ contains
     if (ierr /= 0) error stop "conserving_rebin: ierr not zero."
 
     deallocate(old_bins, old_vals, new_bins, new_vals)
+
+  end subroutine
+
+  subroutine test_grid_at_resolution()
+
+    real(dp), allocatable :: wavl(:), Rs(:)
+    real(dp), parameter :: wv_min = 1.0_dp
+    real(dp), parameter :: wv_max = 5.0_dp
+    real(dp), parameter :: R = 10.0_dp
+    integer :: ierr
+
+    call grid_at_resolution(wv_min, wv_max, R, wavl, ierr)
+    if (ierr /= 0) error stop "grid_at_resolution: ierr not zero."
+
+    Rs = wavl(1:size(wavl)-1)/(wavl(2:) - wavl(1:size(wavl)-1))
+
+    ! Gridding should be equal to R, except the last point.
+    if (.not. all(is_close(Rs(1:size(Rs)-1), R))) then
+      error stop "grid_at_resolution: returned incorrect values"
+    endif
+
+  end subroutine
+
+  subroutine test_make_bins()
+    real(dp), allocatable :: wv(:), wavl(:)
+    integer :: ierr
+
+    ! Correct values were computed with https://github.com/ACCarnall/spectres
+    real(dp), parameter :: wavl_correct(*) = &
+    [ &
+    7.7777777777777779e-01_dp, 1.2222222222222223e+00_dp, 1.6666666666666665e+00_dp, 2.1111111111111107e+00_dp, &
+    2.5555555555555554e+00_dp, 3.0000000000000000e+00_dp, 3.4444444444444446e+00_dp, 3.8888888888888884e+00_dp, &
+    4.3333333333333330e+00_dp, 4.7777777777777777e+00_dp, 5.2222222222222223e+00_dp &
+    ]
+
+    allocate(wv(10))
+    allocate(wavl(size(wv)+1))
+    call linspace(1.0_dp, 5.0_dp, wv)
+    call make_bins(wv, wavl, ierr)
+    if (ierr /= 0) error stop "make_bins: ierr not zero."
+
+    if (.not. all(is_close(wavl, wavl_correct, tol = 1.0e-10_dp))) then
+      error stop "make_bins: returned incorrect errors"
+    endif
 
   end subroutine
 

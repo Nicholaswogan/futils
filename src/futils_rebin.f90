@@ -4,6 +4,7 @@ module futils_rebin
   implicit none
   private
   public :: rebin, rebin_with_errors, conserving_rebin
+  public :: make_bins, grid_at_resolution, rebin_error_message
 
 contains
 
@@ -134,34 +135,35 @@ contains
 
     ! option to check inputs.
     if (present(ierr)) then
+      
       call check_rebin_inputs(old_bins, old_vals, new_bins, new_vals, ierr)
       if (ierr /= 0) return
 
       ! Additionally, check shape of errors
       if (n_old /= size(old_errs)) then
-        ierr = -5
+        ierr = -6
         return
       endif
 
       if (n_new /= size(new_errs)) then
-        ierr = -5
+        ierr = -7
         return
       endif
 
       ! Check to make sure errors are positive
       if (any(old_errs < 0.0_dp)) then
-        ierr = -6
+        ierr = -8
         return
       endif
 
       ! Check to make sure that new bins don't extend beyond old bins
       if (new_bins(1) < old_bins(1) .or. new_bins(n_new+1) > old_bins(n_old+1)) then
-        ierr = -7
+        ierr = -9
         return
       endif
 
     endif
-    
+
     l = 1
     
     do i = 1,n_new
@@ -240,6 +242,8 @@ contains
     
   end subroutine
 
+  !> Similar to `rebin`, except if the `new_bins` have extents that do not match
+  !> `old_bins`, then extra effort is made so that no mass is lost.
   subroutine conserving_rebin(old_bins, old_vals, new_bins, new_vals, ierr)
     real(dp), intent(in) :: old_bins(:) !! Edges of bins for which old_vals are defined
     real(dp), intent(in) :: old_vals(:) !! Values defined on old_bins.
@@ -356,7 +360,7 @@ contains
 
   end subroutine
 
-  !> Checks inputs for problems with inputs
+  !> Checks inputs
   subroutine check_rebin_inputs(old_bins, old_vals, new_bins, new_vals, ierr)
     real(dp), intent(in) :: old_bins(:) !! Edges of bins for which old_vals are defined
     real(dp), intent(in) :: old_vals(:) !! Values defined on old_bins.
@@ -399,5 +403,122 @@ contains
     enddo
 
   end subroutine
-  
+
+  !> Given a series of wavelength points, find the corresponding bin edges
+  subroutine make_bins(wv, wavl, ierr)
+    real(dp), intent(in) :: wv(:)
+    real(dp), intent(out) :: wavl(:)
+    integer, optional, intent(out) :: ierr
+
+    integer :: i
+    
+    if (present(ierr)) then
+      ierr = 0
+
+      ! Check size
+      if (size(wv)+1 /= size(wavl)) then
+        ierr = -12
+        return
+      endif
+
+      ! Must be increasing
+      do i = 1,size(wv)-1
+        if (wv(i+1) <= wv(i)) then
+          ierr = -13
+          return
+        endif
+      enddo
+
+    endif
+
+    wavl(1) = wv(1) - (wv(2) - wv(1))/2.0_dp
+    wavl(size(wavl)) = wv(size(wv)) + (wv(size(wv)) - wv(size(wv)-1))/2.0_dp
+    wavl(2:size(wavl)-1) = (wv(2:size(wv)) + wv(1:size(wv)-1))/2.0_dp
+
+  end subroutine
+
+  !> Computes a grid of bins at a given resolution `R`
+  subroutine grid_at_resolution(wv_min, wv_max, R, wavl, ierr)
+    real(dp), intent(in) :: wv_min !! Minimum bin extent
+    real(dp), intent(in) :: wv_max !! Maximum bin extent
+    real(dp), intent(in) :: R !! Bin resolution (dlam = lam/R)
+    real(dp), allocatable, intent(out) :: wavl(:) !! Ouput grid
+    integer, optional, intent(out) :: ierr !! If /= 0, then an error has occurred
+
+    integer :: i, n
+    real(dp) :: dlam, lam
+
+    if (present(ierr)) then
+      ierr = 0
+
+      if (any([wv_min, wv_max, R] <= 0.0_dp)) then
+        ierr = -10
+        return
+      endif
+
+      if (wv_min >= wv_max) then
+        ierr = -11
+        return
+      endif
+    endif
+
+    n = 1
+    lam = wv_min
+    do
+      dlam = lam/R
+      lam = lam + dlam
+      n = n + 1
+      if (lam >= wv_max) exit
+    enddo
+
+    allocate(wavl(n))
+    wavl(1) = wv_min
+    lam = wv_min
+    do i = 2,n-1
+      dlam = lam/R
+      lam = lam + dlam
+      wavl(i) = lam
+    enddo
+    wavl(n) = wv_max
+
+  end subroutine
+
+  function rebin_error_message(ierr) result(err)
+    integer, intent(in) :: ierr
+    character(:), allocatable :: err
+
+    if (ierr >= 0) then
+      err = ''
+    elseif (ierr == -1) then
+      err = '`old_bins` must have a length of `size(old_vals) + 1`'
+    elseif (ierr == -2) then
+      err = '`new_bins` must have a length of `size(new_vals) + 1`'
+    elseif (ierr == -3) then
+      err = '`old_bins` must be strictly increasing'
+    elseif (ierr == -4) then
+      err = '`new_bins` must be strictly increasing'
+    elseif (ierr == -5) then
+      err = '`conserving_rebin` failed to conserve'
+    elseif (ierr == -6) then
+      err = '`old_bins` must have a length of `size(old_errs) + 1`'
+    elseif (ierr == -7) then
+      err = '`new_bins` must have a length of `size(new_errs) + 1`'
+    elseif (ierr == -8) then
+      err = '`old_errs` can not contain negative values'
+    elseif (ierr == -9) then
+      err = '`new_bins` must have minimum and maximum extents that fall within `old_bins`'
+    elseif (ierr == -10) then
+      err = '`wv_min`, `wv_max` and `R` must all be positive'
+    elseif (ierr == -11) then
+      err = '`wv_max` must be >= `wv_min`'
+    elseif (ierr == -12) then
+      err = '`size(wv)+1` must equal `size(wavl)`'
+    elseif (ierr == -13) then
+      err = '`wv` must be strictly increasing'
+    else
+      err = 'Unknown error'
+    endif
+
+  end function
+
 end module
