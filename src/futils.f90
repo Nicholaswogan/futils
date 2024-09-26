@@ -16,7 +16,8 @@ module futils
   ! misc
   public :: Timer, printf, is_close, linspace, FileCloser
   ! interpolation
-  public :: addpnt, inter2, rebin, rebin_with_errors, conserving_rebin, interp
+  public :: addpnt, inter2, interp_discrete_to_bins
+  public :: rebin, rebin_with_errors, conserving_rebin, interp
   public :: make_bins, grid_at_resolution, rebin_error_message
   ! strings
   public :: replaceStr
@@ -239,7 +240,7 @@ contains
     real(dp), intent(in) :: x(n) , y(n) , xg(ng)
     integer, intent(out) :: ierr
     ! output:
-    real(dp), intent(out) :: yg(ng)
+    real(dp), intent(out) :: yg(ng-1)
 
     ! local:
     real(dp) :: area , xgl , xgu
@@ -335,6 +336,124 @@ contains
       yg(i) = area/(xgu-xgl)
     enddo
     !_______________________________________________________________________
+
+  end subroutine
+
+  !> Wrapper for addpnt and inter2 routines. Given values defined on discrete points
+  !> (x and y), compute their value on a binned grid (bins). The routine can extrapolate
+  !> Beyond the edges of `x` either constantly, or with a fill value.
+  subroutine interp_discrete_to_bins(bins, x, y, bin_vals, extrapolate, fill_value, err)
+    real(dp), intent(in) :: bins(:) !! Target bins
+    real(dp), intent(in) :: x(:) !! Discrete input grid
+    real(dp), intent(in) :: y(:) !! Values defined on `x`
+    real(dp), intent(out) :: bin_vals(:) !! Output values defined on `bins`
+    !> Either "Constant" or "FillValue". By default, "Constant".
+    character(*), optional, intent(in) :: extrapolate
+    !> If extrapolate == "FillValue", then `fill_value` is the value to extend the input
+    !> data with
+    real(dp), optional, intent(in) :: fill_value
+    character(:), allocatable :: err !! An error has occured if upon return, `err` is allocated.
+
+    character(:), allocatable :: extrapolate_
+    integer :: ierr, n
+    real(dp) :: xnew, ynew
+    real(dp), allocatable :: xx(:), yy(:)
+
+    ! Optional inputs
+    if (present(extrapolate)) then
+      extrapolate_ = extrapolate
+    else
+      extrapolate_ = 'Constant'
+    endif
+
+    ! Check inputs
+    if (size(bins) /= size(bin_vals)+1) then
+      err = '"bins" and "bin_vals" have incompatable shapes'
+      return
+    endif
+    if (.not.all(bins(2:) > bins(1:size(bins)-1))) then
+      err = '"bins" is not strictly increasing'
+      return
+    endif
+    if (size(x) /= size(y)) then
+      err = '"x" and "y" have incompatable shapes'
+      return
+    endif
+    if (.not.all(x(2:) > x(1:size(x)-1))) then
+      err = '"x" is not strictly increasing'
+      return
+    endif
+    if (extrapolate_ /= 'Constant' .and. extrapolate_ /= 'FillValue') then
+      err = '"extrapolate" can either be "Constant" or "FillValue"'
+      return
+    endif
+    if (extrapolate_ == 'FillValue' .and. .not.present(fill_value)) then
+      err = '"extrapolate" is set to "FillValue", but "fill_value" was not supplied'
+      return
+    endif
+
+    ! Add the fill value
+    allocate(xx(size(x)+4),yy(size(y)+4))
+    xx(1:size(x)) = x
+    yy(1:size(y)) = y
+    n = size(x)
+
+    ! Extend data downward
+    if (x(1) < 0.0_dp) then
+      xnew = x(1)*(1.0_dp + sqrt(epsilon(1.0_dp)))
+    elseif (x(1) == 0.0_dp) then
+      xnew = -tiny(1.0_dp)
+    else
+      xnew = x(1)*(1.0_dp - sqrt(epsilon(1.0_dp)))
+    endif
+    if (extrapolate_ == 'Constant') then
+      ynew = y(1)
+    elseif (extrapolate_ == 'FillValue') then
+      ynew = fill_value
+    endif
+    call addpnt(xx, yy, size(xx), n, xnew, ynew, ierr)
+    if (ierr /= 0) then
+      err = '"addpnt" returned an error.'
+      return
+    endif
+    xnew = -huge(1.0_dp)
+    call addpnt(xx, yy, size(xx), n, xnew, ynew, ierr)
+    if (ierr /= 0) then
+      err = '"addpnt" returned an error.'
+      return
+    endif
+
+    ! Extend data upward
+    if (x(size(x)) < 0.0_dp) then
+      xnew = x(size(x))*(1.0_dp - sqrt(epsilon(1.0_dp)))
+    elseif (x(size(x)) == 0.0_dp) then
+      xnew = tiny(1.0_dp)
+    else
+      xnew = x(size(x))*(1.0_dp + sqrt(epsilon(1.0_dp)))
+    endif
+    if (extrapolate_ == 'Constant') then
+      ynew = y(size(y))
+    elseif (extrapolate_ == 'FillValue') then
+      ynew = fill_value
+    endif
+    call addpnt(xx, yy, size(xx), n, xnew, ynew, ierr)
+    if (ierr /= 0) then
+      err = '"addpnt" returned an error.'
+      return
+    endif
+    xnew = huge(1.0_dp)
+    call addpnt(xx, yy, size(xx), n, xnew, ynew, ierr)
+    if (ierr /= 0) then
+      err = '"addpnt" returned an error.'
+      return
+    endif
+
+    ! Interpolate
+    call inter2(size(bins), bins, bin_vals, size(xx), xx, yy, ierr)
+    if (ierr /= 0) then
+      err = '"inter2" returned an error.'
+      return
+    endif
 
   end subroutine
 

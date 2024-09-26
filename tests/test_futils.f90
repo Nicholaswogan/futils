@@ -7,6 +7,7 @@ program test_futils
     integer :: i = 0 !! function counter
   end type
 
+  call test_interp_discrete_to_bins()
   call test_sort()
   call test_searchsorted()
   call test_interp()
@@ -21,6 +22,28 @@ program test_futils
   call test_brent()
 
 contains
+
+  subroutine test_interp_discrete_to_bins()
+    real(dp), allocatable :: bins(:), x(:), y(:), bin_vals(:)
+    real(dp) :: fill_value
+    character(:), allocatable :: err
+
+    x = [1.0_dp, 2.0_dp, 3.0_dp, 4.0_dp, 5.0_dp]
+    y = [2.0_dp, 3.0_dp, 2.8_dp, 3.2_dp, 4.6_dp]
+    bins = [0.5_dp, 0.7_dp, 1.0_dp, 3.1_dp, 4.5_dp, 6.0_dp]
+    allocate(bin_vals(size(bins)-1))
+    fill_value = 0.0_dp
+    call interp_discrete_to_bins(bins, x, y, bin_vals, extrapolate='FillValue', fill_value=fill_value, err=err)
+    if (allocated(err)) then
+      error stop "test_interp_discrete_to_bins failed: "//err
+    endif
+
+    call interp_discrete_to_bins(bins, x, y, bin_vals, extrapolate='Constant', err=err)
+    if (allocated(err)) then
+      error stop "test_interp_discrete_to_bins failed: "//err
+    endif
+
+  end subroutine
 
   subroutine test_sort()
     real(dp), allocatable :: arr(:), arr_sorted(:)
