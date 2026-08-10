@@ -234,7 +234,7 @@ contains
 !  1. [zeroin.f](http://www.netlib.org/go/zeroin.f) from Netlib
 
 
-  subroutine zeroin(me, ax, bx, tol, xzero, fzero, iflag, fax, fbx)
+  recursive subroutine zeroin(me, ax, bx, tol, xzero, fzero, iflag, fax, fbx)
 
     use iso_fortran_env, only: error_unit
 
